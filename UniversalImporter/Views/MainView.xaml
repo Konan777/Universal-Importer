@@ -1,0 +1,63 @@
+﻿<Window x:Class="UniversalImporter.MainView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:UniversalImporter"
+        mc:Ignorable="d"
+        Title="UniversalImporter v 0.1" Height="450" Width="810" 
+        WindowStartupLocation="CenterScreen" ResizeMode="NoResize">
+    <Grid Margin="20,20">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="28"/>
+                <RowDefinition Height="28"/>
+                <RowDefinition Height="28"/>
+                <RowDefinition Height="28"/>
+                <RowDefinition Height="28"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="28"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150" />
+                <ColumnDefinition Width="500" />
+                <ColumnDefinition Width="150" />
+            </Grid.ColumnDefinitions>
+            <Label Content="Начальная дата:" Margin="1" Width="150" Grid.Column="0" Grid.Row="0"/>
+            <Label Content="Конечная дата:" Margin="1" Width="150" Grid.Column="0" Grid.Row="1"/>
+            <Label Content="Строка соединения:" Margin="1" Width="150" Grid.Column="0" Grid.Row="2"/>
+            <Label Content="Имя файла:" Margin="1" Width="150" Grid.Column="0" Grid.Row="3"/>
+            <Label Content="Имя Таблицы:" Margin="1" Width="150" Grid.Column="0" Grid.Row="4"/>
+
+            <DatePicker Text="{Binding DateBeg, ValidatesOnNotifyDataErrors=True, 
+                Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  SelectedDateFormat="Short" Language="ru-RU"
+                Grid.Column="1" Grid.Row="0" HorizontalAlignment="Left" />
+            <DatePicker Text="{Binding DateEnd, ValidatesOnNotifyDataErrors=True, 
+                Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" SelectedDateFormat="Short" Language="ru-RU"
+                Grid.Column="1" Grid.Row="1" HorizontalAlignment="Left" />
+
+            <TextBox Text="{Binding ConnectionString, ValidatesOnNotifyDataErrors=True}" VerticalAlignment="Center"
+                Grid.Column="1" Grid.Row="2" HorizontalAlignment="Stretch" />
+            <TextBox Text="{Binding FileName, ValidatesOnNotifyDataErrors=True}"  VerticalAlignment="Center"
+                Grid.Column="1" Grid.Row="3" HorizontalAlignment="Stretch" IsEnabled="False" />
+            <ComboBox Grid.Column="1" HorizontalAlignment="Left" Grid.Row="4" 
+                ItemsSource="{Binding Tables}" SelectedItem="{Binding SelectedTable}"
+                VerticalAlignment="Center" Width="150"/>
+
+            <Button Content="Выбрать файл" Command="{Binding CmdSelectFile}" 
+                Grid.Row="3" Grid.Column="2" 
+                Height="23" Width="100" HorizontalAlignment="Left">
+            </Button>
+            <Button Content="Обновить список" Command="{Binding CmdRefreshTables}" 
+                Grid.Row="4" Grid.Column="2" 
+                Height="23" Width="100" HorizontalAlignment="Left">
+            </Button>
+            <Button Content="Сохранить" Command="{Binding CmdSave}" 
+                Grid.Row="6" Grid.Column="2" 
+                Height="23" Width="100" HorizontalAlignment="Left">
+            </Button>
+
+        </Grid>
+
+    </Grid>
+</Window>
