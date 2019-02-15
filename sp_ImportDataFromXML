@@ -1,0 +1,47 @@
+IF object_id('[dbo].[sp_ImportDataFromXML]', 'P') is not null drop procedure [dbo].sp_ImportDataFromXML;
+GO
+
+CREATE PROCEDURE [dbo].[sp_ImportDataFromXML]
+	@TableName as Nvarchar(50) 
+	,@Xml as XML
+	,@RowsInserted bigint OUTPUT
+	-- Отладочная информация (для выяснения почему падает при вставке)
+	,@CurrentStatement Nvarchar(MAX) OUTPUT
+AS
+BEGIN
+	DECLARE
+		@Columns Nvarchar(MAX)		-- Список полей вида "CustomerID, CustomerName, Address"
+		,@Postfix Nvarchar(MAX)		-- Формат полей вида "CustomerID [varchar](50) 'CustomerID'"
+		,@XMLDocPointer INT				-- Указатель на документ
+		,@Statement Nvarchar(MAX)	-- Dynamic SQL variable
+
+	-- { Собираем строки
+	SELECT  @Columns = COALESCE(@Columns + ', ', '') + COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS where TABLE_NAME=@TableName;
+
+	SELECT  
+		@Postfix = COALESCE(@Postfix + ', ', '') + COLUMN_NAME +' ['+DATA_TYPE+']('+COALESCE(CAST(CHARACTER_MAXIMUM_LENGTH as nvarchar(20)), '')+') '+''''+COLUMN_NAME+''''
+	FROM INFORMATION_SCHEMA.COLUMNS where TABLE_NAME=@TableName and CHARACTER_MAXIMUM_LENGTH is not null;
+
+	SELECT  
+		@Postfix = COALESCE(@Postfix + ', ', '') + COLUMN_NAME +' ['+DATA_TYPE+'] '+''''+COLUMN_NAME+''''
+	FROM INFORMATION_SCHEMA.COLUMNS where TABLE_NAME=@TableName and CHARACTER_MAXIMUM_LENGTH is null;
+	-- } Собираем строки
+
+	EXEC sp_xml_preparedocument @XMLDocPointer OUTPUT, @Xml
+
+	-- Формируем запрос
+	SET @Statement = 'INSERT INTO '+@TableName+' SELECT '+@Columns+
+		' FROM OPENXML(@XMLDocPointer, ''ROOT/Rows/Row'')'+
+		' WITH ('+@Postfix+')'
+	
+	SET @CurrentStatement = @Statement
+	
+	-- Выполняем запрос
+	EXEC dbo.sp_executesql @statement, N'@XMLDocPointer int OUTPUT', @XMLDocPointer=@XMLDocPointer OUTPUT;
+
+	SET @RowsInserted = @@ROWCOUNT
+
+	EXEC sp_xml_removedocument @XMLDocPointer
+
+
+END;
