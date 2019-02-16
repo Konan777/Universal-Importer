@@ -9,6 +9,8 @@ using System.IO;
 using System.Xml.Linq;
 using System.Data;
 using System.Data.SqlTypes;
+using System.ComponentModel;
+using System.Threading.Tasks;
 
 namespace UniversalImporter.DAL
 {
@@ -17,6 +19,9 @@ namespace UniversalImporter.DAL
         private string TableName;
         private string FileName;
         private string ConnectionString;
+        private List<string> ColumnNames;
+        private double result1;
+        private double result2;
         public DataAccessLayer(string tableName, string fileName, string connectionString)
         {
             TableName = tableName;
@@ -40,18 +45,23 @@ namespace UniversalImporter.DAL
                 //.Where(w => w[0].Cast<DateTime>() >= dateBeg && w[0].Cast<DateTime>() <= dateEnd)
                 .ToList();
 
-            var columnNames = GetColumnNames();
+            ColumnNames = GetColumnNames();
 
             // Creating XML
             var content = new XElement("Rows",
               rows.Select(line => new XElement("Row",
-                  line.Select((column, index) => new XElement(columnNames[index], column)))));
+                  line.Select((column, index) => new XElement(ColumnNames[index], column)))));
             var xml = new XDocument(new XElement("ROOT", content));
 
             //xml.Save(@"D:\out.xml");
 
-            // Inserting
+            // Inserting from XML
             InsertFromXML(xml);
+
+            // Inserting from XML
+            BulkSave(rows);
+
+            MessageBox.Show(String.Format("Разница в скорости {0}", result1/result2));
         }
 
         #region MS SQL helpers
@@ -148,6 +158,7 @@ namespace UniversalImporter.DAL
                 }
                 using (SqlCommand command = new SqlCommand("[dbo].[sp_ImportDataFromXML]", connection))
                 {
+                    command.CommandTimeout = 360;
                     command.CommandType = CommandType.StoredProcedure;
                     command.Parameters.Add(new SqlParameter("@TableName", SqlDbType.NVarChar, 50) { Value=TableName } );
                     command.Parameters.Add(new SqlParameter("@Xml", SqlDbType.Xml) { Value = new SqlXml(doc.CreateReader()) });
@@ -160,7 +171,8 @@ namespace UniversalImporter.DAL
                         var timeEnd = DateTime.Now;
 
                         var rowsInserted = (Int64)command.Parameters["@RowsInserted"].Value;
-                        MessageBox.Show("Вставлено " + rowsInserted + " записей. За : "+(timeEnd-timeBeg).TotalSeconds+" секунд.");
+                        MessageBox.Show("XML:Вставлено " + rowsInserted + " записей. За : "+(timeEnd-timeBeg).TotalSeconds+" секунд.");
+                        result1 = (timeEnd - timeBeg).TotalSeconds;
                     }
                     catch (Exception ex)
                     {
@@ -170,6 +182,53 @@ namespace UniversalImporter.DAL
             }
         }
 
+        private void BulkSave(List<RowNoHeader> rows)
+        {
+            if (rows.Count == 0) return;
+            DataTable outt = GetDataTableSchema();
+            FillTable(rows, outt);
+            using (SqlConnection connection = new SqlConnection(ConnectionString))
+            {
+                connection.Open();
+                var timeBeg = DateTime.Now;
+                using (SqlBulkCopy bulkCopy = new SqlBulkCopy(ConnectionString, SqlBulkCopyOptions.Default))
+                {
+                    bulkCopy.DestinationTableName = "[" + TableName + "]";
+                    bulkCopy.WriteToServer(outt);
+                }
+                var timeEnd = DateTime.Now;
+                MessageBox.Show("BULK:Вставлено " + rows.Count + " записей. За : " + (timeEnd - timeBeg).TotalSeconds + " секунд.");
+                result2 = (timeEnd - timeBeg).TotalSeconds;
+            }
+        }
+        private void FillTable(List<RowNoHeader> rows, DataTable table)
+        {
+            foreach (var srcrow in rows)
+            {
+                DataRow row = table.NewRow();
+                for (int i=0; i<srcrow.Count; i++)
+                {
+                    row[ColumnNames[i]] = srcrow[i].Value;
+                }
+                table.Rows.Add(row);
+            }
+        }
+        private DataTable GetDataTableSchema()
+        {
+            var result = new DataTable();
+            using (SqlConnection connection = new SqlConnection(ConnectionString))
+            {
+                connection.Open();
+                string query = String.Format("SELECT TOP 1 * FROM {0}", TableName);
+                using (SqlCommand command = new SqlCommand(query, connection))
+                {
+                    SqlDataReader reader = command.ExecuteReader(CommandBehavior.SchemaOnly);
+
+                    result.Load(reader);
+                }
+            }
+            return result;
+        }
 
 
         #endregion
