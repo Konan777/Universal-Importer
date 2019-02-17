@@ -7,6 +7,8 @@ using Microsoft.Win32;
 using System.Data.SqlClient;
 using System.Windows;
 using UniversalImporter.DAL;
+using System.Threading.Tasks;
+using System.IO;
 
 namespace UniversalImporter.ViewModel
 {
@@ -14,12 +16,16 @@ namespace UniversalImporter.ViewModel
     {
         #region private members
         //private string _fileName = @"D:\excel_1_100k.xlsx";
-        private string _fileName = @"D:\excel_1.xls";
+        private string _fileName = @"D:\excel_1_300k.xlsx";
         private string _connectionString = ConfigurationSettings.AppSettings["ConnectionString"].ToString();
         public ObservableCollection<string> _tables;
         private string _selectedTable;
         private DateTime _dateBeg = DateTime.Parse("2018-12-17");
         private DateTime _dateEnd = DateTime.Parse("2018-12-18");
+        private int _progressBarValue;
+        private int _progressBarMaximum;
+        private string _progressBarText;
+        private bool _statuBarVisiblity;
         #endregion
 
         #region public members
@@ -79,15 +85,71 @@ namespace UniversalImporter.ViewModel
         }
         public RelayCommand CmdSelectFile { get; }
         public RelayCommand CmdRefreshTables { get; }
-        public RelayCommand CmdSave { get; }
+        public RelayCommand CmdSaveXml { get; }
+        public RelayCommand CmdSaveBulk { get; }
+        public bool StatuBarVisiblity
+        {
+            get
+            {
+                return _statuBarVisiblity;
+            }
+
+            private set
+            {
+                _statuBarVisiblity = value;
+                NotifyPropertyChanged();
+            }
+        }
+        public int ProgressBarValue
+        {
+            get
+            {
+                return _progressBarValue;
+            }
+
+            private set
+            {
+                _progressBarValue = value;
+                NotifyPropertyChanged();
+            }
+        }
+        public int ProgressBarMaximum
+        {
+            get
+            {
+                return _progressBarMaximum;
+            }
+
+            private set
+            {
+                _progressBarMaximum = value;
+                NotifyPropertyChanged();
+            }
+        }
+        public string ProgressBarText
+        {
+            get
+            {
+                return _progressBarText;
+            }
+
+            private set
+            {
+                _progressBarText = value;
+                NotifyPropertyChanged();
+            }
+        }
+
         #endregion
 
         public MainViewModel()
         {
             CmdSelectFile = new RelayCommand(o => { SelectFile(); });
             CmdRefreshTables = new RelayCommand(o => { RefreshTables(); }); 
-            CmdSave = new RelayCommand(o => { Save(); });
+            CmdSaveXml = new RelayCommand(o => { SaveXml(); });
+            CmdSaveBulk = new RelayCommand(o => { SaveBulk(); });
             Tables = DataAccessLayer.RefreshTables(ConnectionString);
+           
             RefreshTables();
         }
 
@@ -104,25 +166,83 @@ namespace UniversalImporter.ViewModel
         {
             Tables = DataAccessLayer.RefreshTables(ConnectionString);
         }
-        private void Save()
+        private bool Save()
         {
             if (string.IsNullOrEmpty(FileName))
             {
                 MessageBox.Show("На выбран файл для обработки!");
-                return;
+                return false;
             }
             if (string.IsNullOrEmpty(SelectedTable))
             {
                 MessageBox.Show("На выбрана таблица для вставки данных!");
-                return;
+                return false;
             }
             // для того чтобы выбрались данные за весь выбранный период добавим к конченой дате время 
             // Т.к. у нас контрол только с датами а в файле "excel_1.xls" есть еще и время
             TimeSpan ts = new TimeSpan(23, 59, 59);
             DateEnd = DateEnd.Date + ts;
-
+            ProgressBarValue = 0;
+            ProgressBarMaximum = 100;
+            StatuBarVisiblity = true;
+            return true;
+        }
+        private async void SaveXml()
+        {
+            if (!Save())
+                return;
             var dal = new DataAccessLayer(SelectedTable, FileName, ConnectionString);
-            dal.SaveXML(DateBeg, DateEnd);
+            var progress = new Progress<int>();
+            progress.ProgressChanged += (sender, args) =>
+            {
+                ProgressBarValue = args;
+                ProgressBarText = string.Format("Parsed {0} from {1} rows", args, ProgressBarMaximum);
+            };
+            var task = Task.Run(() => {
+                IExcelReader reader = null;
+                if (Path.GetExtension(FileName).ToUpper() == ".XLSX")
+                    reader = new ReaderEPPlus();
+                else
+                    reader = new ReaderOleDb();
+
+                reader.Init(FileName, dal.GetSqlTableSchema());
+                ProgressBarMaximum = reader.RowsCount();
+                dal.SaveXML(reader, DateBeg, DateEnd, progress);
+            });
+            await task;
+            
+            StatuBarVisiblity = false;
+            ProgressBarValue = 0;
+        }
+        private async void SaveBulk()
+        {
+            if (!Save())
+                return;
+            var dal = new DataAccessLayer(SelectedTable, FileName, ConnectionString);
+            var progress = new Progress<int>();
+            progress.ProgressChanged += (sender, args) =>
+            {
+                ProgressBarValue = args;
+                ProgressBarText = string.Format("Parsed {0} from {1} rows", args, ProgressBarMaximum);
+            };
+            var task = Task.Run(() => {
+                IExcelReader reader = null;
+                if (Path.GetExtension(FileName).ToUpper() == ".XLSX")
+                    reader = new ReaderEPPlus();
+                else
+                    reader = new ReaderOleDb();
+
+
+                reader.Init(FileName, dal.GetSqlTableSchema());
+                ProgressBarMaximum = reader.RowsCount();
+
+                dal.SaveBulk(reader, DateBeg, DateEnd, progress);
+            });
+            await task;
+
+            //dal.SaveXML(reader, DateBeg, DateEnd, progress);
+            StatuBarVisiblity = false;
+            ProgressBarValue = 0;
         }
         #endregion
 
