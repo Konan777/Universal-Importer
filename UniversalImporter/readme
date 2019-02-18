@@ -1,4 +1,4 @@
-строка соединени€ с MS SQL в файле App.config
-
-требуетс€ установка Microsoft Access Database Engine 2010
-ссылка: https://www.microsoft.com/en-in/download/details.aspx?id=13255
+ѕриложение позвол€ющее вставл€ть данные из первого листа книги Excel в существующую таблицу MS SQL
+»спытано несколько вариантов пакетов дл€ работы с Excel
+ѕриложение использует два варианта вставки данных в таблицу: XML и SqlBulkCopy
+—трока соединени€ с MS SQL в файле App.config
