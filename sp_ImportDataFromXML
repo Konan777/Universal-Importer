@@ -12,7 +12,7 @@ BEGIN
 	DECLARE
 		@Columns Nvarchar(MAX)		-- Список полей вида "CustomerID, CustomerName, Address"
 		,@Postfix Nvarchar(MAX)		-- Формат полей вида "CustomerID [varchar](50) 'CustomerID'"
-		,@XMLDocPointer INT				-- Указатель на документ
+		,@XMLDocPointer INT		-- Указатель на документ
 		,@Statement Nvarchar(MAX)	-- Dynamic SQL variable
 
 	-- { Собираем строки
