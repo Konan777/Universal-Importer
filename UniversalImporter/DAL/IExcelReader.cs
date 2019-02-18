@@ -13,9 +13,9 @@ namespace UniversalImporter.DAL
         bool Init(string fileName, DataTable shemaTable);
         DataTable ReadNext(int count);
         XDocument ReadNextX(int count);
-        int RowsCount();
+        int RowsCount { get; }
         int ReadedRows { get; }
-        int ColumnsCount();
+        int ColumnsCount { get; }
         List<string> Errors { get; }
     }
 

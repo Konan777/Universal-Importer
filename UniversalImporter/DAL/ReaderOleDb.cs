@@ -6,7 +6,7 @@ using System.Linq;
 using System.Xml.Linq;
 
 /// <summary>
-/// Жрет память т.к. "reader = cmd.ExecuteReader();" читает всю таблицу в память
+/// Кушает память т.к. "reader = cmd.ExecuteReader();" читает всю таблицу в память
 /// </summary>
 
 namespace UniversalImporter.DAL
@@ -79,14 +79,17 @@ namespace UniversalImporter.DAL
                     table.Columns.Cast<DataColumn>().Select(col => new XElement(col.ColumnName, row[col])))));
             return new XDocument(new XElement("ROOT", content));
         }
-        public int RowsCount()
+        public int RowsCount 
         {
-            OleDbCommand cmd = new OleDbCommand(string.Format("select count(*) from [{0}]", sheetName), connection);
-            return (int)cmd.ExecuteScalar();
+            get
+            {
+                OleDbCommand cmd = new OleDbCommand(string.Format("select count(*) from [{0}]", sheetName), connection);
+                return (int)cmd.ExecuteScalar();
+            }
         }
-        public int ColumnsCount()
+        public int ColumnsCount  
         {
-            return reader.GetSchemaTable().Rows.Count;
+            get { return reader.GetSchemaTable().Rows.Count; }
         }
 
     }

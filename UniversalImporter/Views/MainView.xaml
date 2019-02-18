@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:UniversalImporter"
         mc:Ignorable="d"
-        Title="UniversalImporter v 0.1" Height="450" Width="830" 
+        Title="UniversalImporter v0.3" Height="450" Width="830" 
         WindowStartupLocation="CenterScreen" ResizeMode="NoResize">
     <Window.Resources>
         <ResourceDictionary>
@@ -61,11 +61,11 @@
                 Height="23" Width="120" HorizontalAlignment="Left">
             </Button>
             <Button Content="Сохранить XML" Command="{Binding CmdSaveXml}" 
-                Grid.Row="6" Grid.Column="2" 
+                Grid.Row="6" Grid.Column="2" IsEnabled="{Binding ButtEnabled}"
                 Height="23" Width="120" HorizontalAlignment="Left">
             </Button>
             <Button Content="Сохранить Bulk" Command="{Binding CmdSaveBulk}" 
-                Grid.Row="7" Grid.Column="2" 
+                Grid.Row="7" Grid.Column="2" IsEnabled="{Binding ButtEnabled}"
                 Height="23" Width="120" HorizontalAlignment="Left">
             </Button>
             <Grid Grid.Row="8" Grid.ColumnSpan="3" VerticalAlignment="Bottom" Margin="0,0,50,0" >

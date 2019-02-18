@@ -1,9 +1,7 @@
 ﻿using ExcelDataReader;
-using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.OleDb;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
@@ -58,7 +56,7 @@ namespace UniversalImporter.DAL
                 if (readed == count)
                     break;
             }
-            if (ReadedRows == RowsCount())
+            if (ReadedRows == RowsCount)
                 stream.Close();
             return result;
         }
@@ -71,13 +69,13 @@ namespace UniversalImporter.DAL
                     table.Columns.Cast<DataColumn>().Select(col => new XElement(col.ColumnName, row[col])))));
             return new XDocument(new XElement("ROOT", content));
         }
-        public int RowsCount()
+        public int RowsCount  
         {
-            return reader.RowCount;
+            get { return reader.RowCount; }
         }
-        public int ColumnsCount()
+        public int ColumnsCount
         {
-            return reader.FieldCount;
+            get { return reader.FieldCount; }
         }
 
     }
