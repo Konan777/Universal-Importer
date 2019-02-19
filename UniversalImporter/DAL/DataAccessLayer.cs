@@ -11,31 +11,26 @@ namespace UniversalImporter.DAL
 {
     public class DataAccessLayer
     {
-        private string TableName;
-        private string FileName;
-        private string ConnectionString;
-        private List<string> ColumnNames;
-        private SqlConnection Connection;
+        private string _tableName;
+        private string _connectionString;
+        private List<string> _columnNames;
+        private SqlConnection _connection;
 
-        public DataAccessLayer(string tableName, string fileName, string connectionString)
+        public DataAccessLayer(string tableName, string connectionString)
         {
-            TableName = tableName;
-            FileName = fileName;
-            ConnectionString = connectionString;
-            Connection = new SqlConnection(ConnectionString);
-            Connection.Open();
+            _tableName = tableName;
+            _connectionString = connectionString;
+            _connection = new SqlConnection(_connectionString);
+            _connection.Open();
         }
-        public void Save(IExcelReader reader, DateTime dateBeg, DateTime dateEnd, IProgress<int> Progress, bool Bulk)
+        public void Save(IReader reader, DateTime dateBeg, DateTime dateEnd, IProgress<int> progress, bool bulk)
         {
 
-            ColumnNames = SqlTableColumnNames();
-            var schemaTable = GetSqlTableSchema();
+            _columnNames = SqlTableColumnNames();
 
-            if (ColumnNames.Count != reader.ColumnsCount)
-            {
-                MessageBox.Show("Не совпадает кол-во колонок в таблицах!");
-                return;
-            }
+            if (_columnNames.Count != reader.ColumnsCount)
+                throw new Exception("Не совпадает кол-во колонок в таблицах!");
+
             var timeBeg = DateTime.Now;
 
             var rowsCount = reader.RowsCount;
@@ -44,20 +39,20 @@ namespace UniversalImporter.DAL
                 step = rowsCount;
             while (reader.ReadedRows < rowsCount)
             {
-                if (Bulk)
+                if (bulk)
                 {
                     var table = reader.ReadNext(step);
                     BulkSave(table);
-                    Progress.Report(reader.ReadedRows);
+                    progress.Report(reader.ReadedRows);
                 }
                 else
                 {
                     var doc = reader.ReadNextX(step);
                     InsertFromXML(doc);
-                    Progress.Report(reader.ReadedRows);
+                    progress.Report(reader.ReadedRows);
                 }
             }
-            Connection.Close();
+            _connection.Close();
 
             var timeEnd = DateTime.Now;
             var result = (timeEnd - timeBeg).TotalSeconds;
@@ -69,10 +64,10 @@ namespace UniversalImporter.DAL
 
 
         #region MS SQL helpers
-        public static ObservableCollection<string> RefreshTables(string ConnectionString)
+        public static ObservableCollection<string> RefreshTables(string connectionString)
         {
             List<String> columnData = new List<String>();
-            using (SqlConnection connection = new SqlConnection(ConnectionString))
+            using (SqlConnection connection = new SqlConnection(connectionString))
             {
                 try
                 {
@@ -100,8 +95,8 @@ namespace UniversalImporter.DAL
         private List<string> SqlTableColumnNames()
         {
             List<String> columnNames = new List<String>();
-            string query = "select COLUMN_NAME from INFORMATION_SCHEMA.COLUMNS where TABLE_NAME='"+TableName+"'";
-            using (SqlCommand command = new SqlCommand(query, Connection))
+            string query = "select COLUMN_NAME from INFORMATION_SCHEMA.COLUMNS where TABLE_NAME='"+_tableName+"'";
+            using (SqlCommand command = new SqlCommand(query, _connection))
             {
                 using (SqlDataReader reader = command.ExecuteReader())
                 {
@@ -115,11 +110,11 @@ namespace UniversalImporter.DAL
         }
         private void InsertFromXML(XDocument doc)
         {
-            using (SqlCommand command = new SqlCommand("[dbo].[sp_ImportDataFromXML]", Connection))
+            using (SqlCommand command = new SqlCommand("[dbo].[sp_ImportDataFromXML]", _connection))
             {
                 command.CommandTimeout = 360;
                 command.CommandType = CommandType.StoredProcedure;
-                command.Parameters.Add(new SqlParameter("@TableName", SqlDbType.NVarChar, 50) { Value=TableName } );
+                command.Parameters.Add(new SqlParameter("@TableName", SqlDbType.NVarChar, 50) { Value=_tableName } );
                 command.Parameters.Add(new SqlParameter("@Xml", SqlDbType.Xml) { Value = new SqlXml(doc.CreateReader()) });
                 command.Parameters.Add(new SqlParameter("@RowsInserted", SqlDbType.BigInt) { Direction= ParameterDirection.Output });
                 command.Parameters.Add(new SqlParameter("@CurrentStatement", SqlDbType.NVarChar, 5000) { Direction = ParameterDirection.Output });
@@ -136,17 +131,17 @@ namespace UniversalImporter.DAL
         private void BulkSave(DataTable table)
         {
             if (table.Rows.Count == 0) return;
-            using (SqlBulkCopy bulkCopy = new SqlBulkCopy(Connection))
+            using (SqlBulkCopy bulkCopy = new SqlBulkCopy(_connection))
             {
-                bulkCopy.DestinationTableName = "[" + TableName + "]";
+                bulkCopy.DestinationTableName = "[" + _tableName + "]";
                 bulkCopy.WriteToServer(table);
             }
         }
         public DataTable GetSqlTableSchema()
         {
             var result = new DataTable();
-            string query = String.Format("SELECT TOP 1 * FROM {0}", TableName);
-            using (SqlCommand command = new SqlCommand(query, Connection))
+            string query = String.Format("SELECT TOP 1 * FROM {0}", _tableName);
+            using (SqlCommand command = new SqlCommand(query, _connection))
             {
                 SqlDataReader reader = command.ExecuteReader(CommandBehavior.SchemaOnly);
 

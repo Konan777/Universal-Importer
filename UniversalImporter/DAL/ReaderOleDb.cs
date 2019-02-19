@@ -11,57 +11,57 @@ using System.Xml.Linq;
 
 namespace UniversalImporter.DAL
 {
-    public class ReaderOleDb : IExcelReader
+    public class ReaderOleDb : IReader
     {
-        private OleDbConnection connection;
-        private OleDbDataReader reader;
-        private List<DataColumn> columns;
-        private DataTable SchemaTable;
-        private string sheetName;
+        private OleDbConnection _connection;
+        private OleDbDataReader _reader;
+        private List<DataColumn> _columns;
+        private DataTable _schemaTable;
+        private string _sheetName;
+        private List<string> _errors = new List<string>();
         public int ReadedRows { get; private set; }
-        private List<string> errors = new List<string>();
         public List<string> Errors
         {
-            get { return errors; }
+            get { return _errors; }
         }
 
         public bool Init(string fileName, DataTable schemaTable)
         {
-            SchemaTable = schemaTable;
+            _schemaTable = schemaTable;
             var connectionString = string.Format("Provider=Microsoft.ACE.OLEDB.12.0;Data Source={0};Extended Properties =\"Excel 12.0;HDR={1};IMEX=1\"", fileName, (true ? "YES" : "NO"));
-            connection = new OleDbConnection(connectionString);
-            connection.Open();
-            var sheets = connection.GetOleDbSchemaTable(OleDbSchemaGuid.Tables, null);
+            _connection = new OleDbConnection(connectionString);
+            _connection.Open();
+            var sheets = _connection.GetOleDbSchemaTable(OleDbSchemaGuid.Tables, null);
             if (schemaTable == null)
                 return false;
             foreach (DataRow row in sheets.Rows)
             {
-                sheetName = row["TABLE_NAME"].ToString();
+                _sheetName = row["TABLE_NAME"].ToString();
                 break;
             }
-            OleDbCommand cmd = new OleDbCommand(string.Format("SELECT * FROM [{0}]", sheetName), connection);
-            reader = cmd.ExecuteReader();
+            OleDbCommand cmd = new OleDbCommand(string.Format("SELECT * FROM [{0}]", _sheetName), _connection);
+            _reader = cmd.ExecuteReader();
 
             return true;
         }
         public DataTable ReadNext(int count)
         {
             int readed = 0;
-            var result = SchemaTable.Clone();
-            while (reader.Read())
+            var result = _schemaTable.Clone();
+            while (_reader.Read())
             {
                 try
                 {
                     var dataRow = result.NewRow();
                     for (int i = 0; i < result.Columns.Count; i++)
                     {
-                        dataRow[result.Columns[i]] = reader[i];
+                        dataRow[result.Columns[i]] = _reader[i];
                     }
                     result.Rows.Add(dataRow);
                 }
                 catch (Exception ex)
                 {
-                    errors.Add(string.Format("Ошибка в строке {0}:{1}", ReadedRows+1, ex.Message));
+                    _errors.Add(string.Format("Ошибка в строке {0}:{1}", ReadedRows+1, ex.Message));
                 }
                 readed++;
                 ReadedRows++;
@@ -83,13 +83,13 @@ namespace UniversalImporter.DAL
         {
             get
             {
-                OleDbCommand cmd = new OleDbCommand(string.Format("select count(*) from [{0}]", sheetName), connection);
+                OleDbCommand cmd = new OleDbCommand(string.Format("select count(*) from [{0}]", _sheetName), _connection);
                 return (int)cmd.ExecuteScalar();
             }
         }
         public int ColumnsCount  
         {
-            get { return reader.GetSchemaTable().Rows.Count; }
+            get { return _reader.GetSchemaTable().Rows.Count; }
         }
 
     }

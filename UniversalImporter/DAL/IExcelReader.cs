@@ -8,7 +8,7 @@ using System.Xml.Linq;
 
 namespace UniversalImporter.DAL
 {
-    public interface IExcelReader
+    public interface IReader
     {
         bool Init(string fileName, DataTable shemaTable);
         DataTable ReadNext(int count);

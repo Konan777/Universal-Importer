@@ -201,7 +201,7 @@ namespace UniversalImporter.ViewModel
             StatuBarVisiblity = true;
             try
             {
-                var dal = new DataAccessLayer(SelectedTable, FileName, ConnectionString);
+                var dal = new DataAccessLayer(SelectedTable, ConnectionString);
                 var progress = new Progress<int>();
                 progress.ProgressChanged += (sender, args) =>
                 {
@@ -211,7 +211,7 @@ namespace UniversalImporter.ViewModel
                 var task = Task.Run(() =>
                 {
                     ButtEnabled = false;
-                    IExcelReader reader = null;
+                    IReader reader = null;
                     // Для больших файлов другой класс
                     if (Path.GetExtension(FileName).ToUpper() == ".XLSX")
                         reader = new ReaderEPPlus();
@@ -223,7 +223,7 @@ namespace UniversalImporter.ViewModel
                     ProgressBarMaximum = reader.RowsCount;
                     dal.Save(reader, DateBeg, DateEnd, progress, Bulk);
                 });
-                await task;
+                    await task;
             } catch (Exception ex)
             {
                 MessageBox.Show("Ошибка:"+ex.Message);

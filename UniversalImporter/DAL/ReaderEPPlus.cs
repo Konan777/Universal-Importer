@@ -11,13 +11,11 @@ using System.Xml.Linq;
 
 namespace UniversalImporter.DAL
 {
-    public class ReaderEPPlus : IExcelReader
+    public class ReaderEPPlus : IReader
     {
-        private FileStream stream;
-        private IExcelDataReader reader;
-        private List<DataColumn> columns;
-        private DataTable SchemaTable;
-        private string sheetName;
+        private FileStream _stream;
+        private IExcelDataReader _reader;
+        private DataTable _schemaTable;
         public int ReadedRows { get; private set; }
         private List<string> errors = new List<string>();
         public List<string> Errors
@@ -27,24 +25,24 @@ namespace UniversalImporter.DAL
 
         public bool Init(string fileName, DataTable schemaTable)
         {
-            SchemaTable = schemaTable;
+            _schemaTable = schemaTable;
 
-            stream = File.Open(fileName, FileMode.Open, FileAccess.Read);
-            reader = ExcelReaderFactory.CreateReader(stream);
-            reader.Read(); // skip header
+            _stream = File.Open(fileName, FileMode.Open, FileAccess.Read);
+            _reader = ExcelReaderFactory.CreateReader(_stream);
+            _reader.Read(); // skip header
             ReadedRows = 1;
             return true;
         }
         public DataTable ReadNext(int count)
         {
             int readed = 0;
-            var result = SchemaTable.Clone();
-            while (reader.Read())
+            var result = _schemaTable.Clone();
+            while (_reader.Read())
             {
                 try
                 {
                     var row = result.NewRow();
-                    for (int i=0; i < result.Columns.Count; i++) row[result.Columns[i]] = reader.GetValue(i);
+                    for (int i=0; i < result.Columns.Count; i++) row[result.Columns[i]] = _reader.GetValue(i);
                     result.Rows.Add(row);
                 }
                 catch (Exception ex)
@@ -57,7 +55,7 @@ namespace UniversalImporter.DAL
                     break;
             }
             if (ReadedRows == RowsCount)
-                stream.Close();
+                _stream.Close();
             return result;
         }
         public XDocument ReadNextX(int count)
@@ -71,11 +69,11 @@ namespace UniversalImporter.DAL
         }
         public int RowsCount  
         {
-            get { return reader.RowCount; }
+            get { return _reader.RowCount; }
         }
         public int ColumnsCount
         {
-            get { return reader.FieldCount; }
+            get { return _reader.FieldCount; }
         }
 
     }
