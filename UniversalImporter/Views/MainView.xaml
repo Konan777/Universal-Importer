@@ -25,6 +25,7 @@
                 <RowDefinition Height="28"/>
                 <RowDefinition Height="28"/>
                 <RowDefinition Height="28"/>
+                <RowDefinition Height="28"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150" />
@@ -60,15 +61,19 @@
                 Grid.Row="4" Grid.Column="2" 
                 Height="23" Width="120" HorizontalAlignment="Left">
             </Button>
-            <Button Content="Сохранить XML" Command="{Binding CmdSaveXml}" 
-                Grid.Row="6" Grid.Column="2" IsEnabled="{Binding ButtEnabled}"
-                Height="23" Width="120" HorizontalAlignment="Left">
+            <Button Content="Сохранить EF" Command="{Binding CmdSaveEF}" 
+                    Grid.Row="6" Grid.Column="2" IsEnabled="{Binding ButtEnabled}"
+                    Height="23" Width="120" HorizontalAlignment="Left">
             </Button>
-            <Button Content="Сохранить Bulk" Command="{Binding CmdSaveBulk}" 
+            <Button Content="Сохранить XML" Command="{Binding CmdSaveXml}" 
                 Grid.Row="7" Grid.Column="2" IsEnabled="{Binding ButtEnabled}"
                 Height="23" Width="120" HorizontalAlignment="Left">
             </Button>
-            <Grid Grid.Row="8" Grid.ColumnSpan="3" VerticalAlignment="Bottom" Margin="0,0,50,0" >
+            <Button Content="Сохранить Bulk" Command="{Binding CmdSaveBulk}" 
+                Grid.Row="8" Grid.Column="2" IsEnabled="{Binding ButtEnabled}"
+                Height="23" Width="120" HorizontalAlignment="Left">
+            </Button>
+            <Grid Grid.Row="9" Grid.ColumnSpan="3" VerticalAlignment="Bottom" Margin="0,0,50,0" >
                 <StatusBar DockPanel.Dock="Bottom" Height="24" Visibility="{Binding StatuBarVisiblity, Converter={StaticResource BoolToVis}}">
                     <StatusBarItem HorizontalContentAlignment="Stretch">
                         <Grid>

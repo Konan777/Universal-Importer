@@ -6,15 +6,18 @@ using System.Windows;
 using System.Xml.Linq;
 using System.Data;
 using System.Data.SqlTypes;
+using Z.EntityFramework.Extensions;
 
 namespace UniversalImporter.DAL
 {
+    public enum SaveType { SaveXML, SaveBulk, SaveEF }
     public class DataAccessLayer
     {
         private string _tableName;
         private string _connectionString;
         private List<string> _columnNames;
         private SqlConnection _connection;
+        private MSSQL_Database database;
 
         public DataAccessLayer(string tableName, string connectionString)
         {
@@ -23,7 +26,7 @@ namespace UniversalImporter.DAL
             _connection = new SqlConnection(_connectionString);
             _connection.Open();
         }
-        public void Save(IReader reader, DateTime dateBeg, DateTime dateEnd, IProgress<int> progress, bool bulk)
+        public void Save(IReader reader, DateTime dateBeg, DateTime dateEnd, IProgress<int> progress, SaveType saveType)
         {
 
             _columnNames = SqlTableColumnNames();
@@ -39,20 +42,26 @@ namespace UniversalImporter.DAL
                 step = rowsCount;
             while (reader.ReadedRows < rowsCount)
             {
-                if (bulk)
+                switch (saveType)
                 {
-                    var table = reader.ReadNext(step);
-                    BulkSave(table);
-                    progress.Report(reader.ReadedRows);
-                }
-                else
-                {
-                    var doc = reader.ReadNextX(step);
-                    InsertFromXML(doc);
-                    progress.Report(reader.ReadedRows);
+                    case SaveType.SaveBulk:
+                        var table = reader.ReadNext(step);
+                        BulkSave(table);
+                        progress.Report(reader.ReadedRows);
+                        break;
+                    case SaveType.SaveXML:
+                        var doc = reader.ReadNextX(step);
+                        InsertFromXML(doc);
+                        progress.Report(reader.ReadedRows);
+                        break;
+                    case SaveType.SaveEF:
+                        var table2 = reader.ReadNext(step);
+                        ExtensionsSave(table2);
+                        progress.Report(reader.ReadedRows);
+                        break;
                 }
             }
-            _connection.Close();
+           _connection.Close();
 
             var timeEnd = DateTime.Now;
             var result = (timeEnd - timeBeg).TotalSeconds;
@@ -78,7 +87,7 @@ namespace UniversalImporter.DAL
                     MessageBox.Show(ex.Message);
                     return null;
                 }
-                string query = "SELECT top 50 TABLE_NAME FROM INFORMATION_SCHEMA.TABLES order by TABLE_NAME";
+                string query = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES order by TABLE_NAME";
                 using (SqlCommand command = new SqlCommand(query, connection))
                 {
                     using (SqlDataReader reader = command.ExecuteReader())
@@ -136,6 +145,34 @@ namespace UniversalImporter.DAL
                 bulkCopy.DestinationTableName = "[" + _tableName + "]";
                 bulkCopy.WriteToServer(table);
             }
+        }
+
+        private void ExtensionsSave(DataTable table)
+        {
+            database = database ?? new MSSQL_Database();
+            var context = database.GetNewContext();
+            var rows = new List<AAA_300>();
+            foreach (DataRow row in table.Rows)
+            {
+                var _row = new AAA_300()
+                {
+                    Id = 0,
+                    DT01 = (row["DT01"] == null) ? (DateTime?)null : DateTime.Parse(row["DT01"].ToString()),
+                    TXT01 = row["TXT01"].ToString(),
+                    TXT02 = row["TXT02"].ToString(),
+                    TXT03 = row["TXT03"].ToString(),
+                    TIME01 = row["TIME01"].ToString(),
+                    TIME02 = row["TIME02"].ToString(),
+                    COST = (row["COST"] == null) ? (double?)null : double.Parse(row["COST"].ToString())
+                };
+                rows.Add(_row);
+            }
+
+            //context.AAA_100.AddRange(rows);
+            //context.SaveChanges();
+            context.BulkInsert(rows);
+
+
         }
         public DataTable GetSqlTableSchema()
         {

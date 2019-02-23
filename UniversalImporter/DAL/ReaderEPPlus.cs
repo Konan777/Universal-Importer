@@ -42,7 +42,8 @@ namespace UniversalImporter.DAL
                 try
                 {
                     var row = result.NewRow();
-                    for (int i=0; i < result.Columns.Count; i++) row[result.Columns[i]] = _reader.GetValue(i);
+                    for (int i=0; i < result.Columns.Count; i++)
+                        row[result.Columns[i]] = _reader.GetValue(i)??0;
                     result.Rows.Add(row);
                 }
                 catch (Exception ex)

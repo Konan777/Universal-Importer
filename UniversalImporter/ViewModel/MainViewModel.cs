@@ -16,7 +16,7 @@ namespace UniversalImporter.ViewModel
     {
         #region private members
         //private string _fileName = @"D:\excel_1_100k.xlsx";
-        private string _fileName = @"D:\excel_1_300k.xlsx";
+        private string _fileName = @"D:\excel_1_300k2.xlsx";
         private string _connectionString = ConfigurationSettings.AppSettings["ConnectionString"].ToString();
         public ObservableCollection<string> _tables;
         private string _selectedTable;
@@ -88,6 +88,7 @@ namespace UniversalImporter.ViewModel
         public RelayCommand CmdRefreshTables { get; }
         public RelayCommand CmdSaveXml { get; }
         public RelayCommand CmdSaveBulk { get; }
+        public RelayCommand CmdSaveEF { get; }
         public bool StatuBarVisiblity
         {
             get
@@ -160,8 +161,9 @@ namespace UniversalImporter.ViewModel
         {
             CmdSelectFile = new RelayCommand(o => { SelectFile(); });
             CmdRefreshTables = new RelayCommand(o => { RefreshTables(); }); 
-            CmdSaveXml = new RelayCommand(o => { Save(false); });
-            CmdSaveBulk = new RelayCommand(o => { Save(true); });
+            CmdSaveXml = new RelayCommand(o => { Save(SaveType.SaveXML); });
+            CmdSaveBulk = new RelayCommand(o => { Save(SaveType.SaveBulk); });
+            CmdSaveEF = new RelayCommand(o => { Save(SaveType.SaveEF); });
             Tables = DataAccessLayer.RefreshTables(ConnectionString);
             ButtEnabled = true;
             RefreshTables();
@@ -180,7 +182,7 @@ namespace UniversalImporter.ViewModel
         {
             Tables = DataAccessLayer.RefreshTables(ConnectionString);
         }
-        private async void Save(bool Bulk)
+        private async void Save(SaveType saveType)
         {
             if (string.IsNullOrEmpty(FileName))
             {
@@ -221,7 +223,7 @@ namespace UniversalImporter.ViewModel
 
                     reader.Init(FileName, dal.GetSqlTableSchema());
                     ProgressBarMaximum = reader.RowsCount;
-                    dal.Save(reader, DateBeg, DateEnd, progress, Bulk);
+                    dal.Save(reader, DateBeg, DateEnd, progress, saveType);
                 });
                     await task;
             } catch (Exception ex)
