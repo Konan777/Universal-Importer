@@ -8,7 +8,7 @@
 
 https://entityframework-extensions.net/?z=nuget&y=bulkinsert-ef6
 
-преобразование:
+преобразование (можем заменить на делегаты или захардкодить):
 
 interface ITransform {
 	string Transform(string value);
