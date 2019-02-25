@@ -8,57 +8,5 @@
 
 https://entityframework-extensions.net/?z=nuget&y=bulkinsert-ef6
 
-преобразование (можем заменить на делегаты или захардкодить):
-
-interface ITransform {
-	string Transform(string value);
-}
-class Transform01 : ITransform {
-	public string Transform(string value){	
-		return value+'_100500';
-	}
-}
-
-допустим речь о EF. всегда будет POCO класс с полями.
-(если заменяем EF на DataTable то не нужен reflection, но теряем кучу плюшек)
-
-class MyTable {
-	public int Id { get; set;}
-	public string FirstName { get; set;}
-	public string LastName { get; set;}
-    ...
-}
-
-сделаем обобщение для entity. 
-
-public static class UConverter<T> {
-	public static dictionary<string, ITransform> Transforms { get; set; } 	// Маппинг из имени поля и трансформации
-	public static dictionary<string, int> XLSDict { get; set; }				// Маппинг из имени поля и номера ячейки
-	public static dictionary<string, string> APIDict { get; set; }			// Маппинг из имени поля и номера ячейки
-	// для данных из API будет анонимный клас полученный из Json/XML
-
-	public static R Convert(List<string> data){
-		var result = new T();
-		// Заполняем поля Row (MyTable) через reflection. пример в Codex.Entity.
-		foreach(var item in XLSDict)
-		{
-		  //item.Key, item.Value
-		}		
-		return result;
-	} 
-
-	// конвертер для API. На входе класс с данными
-	public static R Convert(<D> data){
-		// Заполняем поля Row (MyTable) через reflection. пример в Codex.Entity.
-	} 
-}
-
-использование
-
-var conv = new UConverter<MyTable>();
-conv.Transforms = new dictionary<string, ITransform>(){ {"LastName", new Transform01() } };
-conv.XLSDict = new dictionary<string, int>(){ {"Id", 0}, {"FirstName", 1}, {"LastName", 2} }
-var row = conv.Convert(new List<string>(){ "1", "Ivan","Ivanov"} );
-
 
 
