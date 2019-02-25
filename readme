@@ -20,6 +20,7 @@ class Transform01 : ITransform {
 }
 
 допустим речь о EF. всегда будет POCO класс с полями.
+(если заменяем EF на DataTable то не нужен reflection, но теряем кучу плюшек)
 
 class MyTable {
 	public int Id { get; set;}
